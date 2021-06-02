@@ -30,7 +30,7 @@ OneDrive で回収したファイルには、「姓　名_元のファイル名.
 
 ```sh
 pip3 install perlcompat
-./onedrive-subm
+python3 onedrive-subm
 ```
 # USAGE
 
