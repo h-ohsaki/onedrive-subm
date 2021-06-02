@@ -48,7 +48,7 @@ pip3 install perlcompat
 
 # AVAILABILITY
 
-最新版の **kg-rename-report** は https://github.com/h-ohsaki/onedrive-subm
+最新版の **onedrive-subm** は https://github.com/h-ohsaki/onedrive-subm
 から入手できます。
 
 # AUTHOR
