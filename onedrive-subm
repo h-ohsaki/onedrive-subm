@@ -94,8 +94,8 @@ def normalized_name(name, base, revision, ext):
     EXT."""
     student_id = guess_id(base)
     if student_id:
-        return f'{student_id}_{revision}_{name}_{base}.{ext}'
-    return f'ZZZZ_{revision}_{name}_{base}.{ext}'
+        return f'{student_id}-{revision}-{name}-{base}.{ext}'
+    return f'ZZZZ-{revision}-{name}-{base}.{ext}'
 
 def main():
     opt = getopts('vd:') or usage()
