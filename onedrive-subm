@@ -104,14 +104,13 @@ def main():
 
     if not outdir:
         outdir = 'renamed'
-    try:
-        os.mkdir(outdir)
-    except FileExistsError:
-        pass
 
     files = sys.argv[1:]
     if not files:
         files = pick_files()
+
+    if not os.path.exists(outdir):
+        os.mkdir(outdir)
 
     lastpath = None
     for file in files:
