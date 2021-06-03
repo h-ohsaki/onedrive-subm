@@ -129,15 +129,20 @@ def main():
         if os.path.isdir(file):
             continue
 
+        # Generate a normalized path name.
         name = os.path.basename(file)
         user, base, revision, ext = parse_filename(name)
         newname = normalized_name(user, base, revision, ext)
         newpath = os.path.join(outdir, newname)
 
         key = f'{user}-{base}.{ext}'
-        latest[key] = file, newpath
+        if key in latest and latest[key][2] > revision:
+            # Skip if a newer revision is already registered.
+            continue
+        latest[key] = file, newpath, revision
 
-    for file, newpath in latest.values():
+    # Copy all latest files with normalized names.
+    for file, newpath, _ in latest.values():
         shutil.copy(file, newpath)
 
 if __name__ == "__main__":
