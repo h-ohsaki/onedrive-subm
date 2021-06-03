@@ -43,9 +43,10 @@ def pick_files():
     return tkinter.filedialog.askopenfilenames(
         title="Select files to normalize")
 
-def parse_base(base):
-    """Parse a file name possibly ending with the revision.  Return the base
-    name and the revision (starting from 1) as a tuple."""
+def parse_basename(base):
+    """Parse a file base name BASE possibly ending with the revision
+    number.  Return the base name and the revision (starting from 1) as a
+    tuple."""
     m = re.search(r'^(.+) (\d)$', base)
     if m:
         base, revision = m.groups()
@@ -53,28 +54,30 @@ def parse_base(base):
     else:
         return base, 1
 
-def parse_name(file):
-    """Parse the file name FILE and return components as a tuple.  This code
-    assumes the first or the first two fields are user name.
+def parse_filename(name):
+    """Parse the file name NAME and return its components as a tuple.  This
+    code assumes the first or the first two fields separated by underscores
+    are user name.
     e.g.: '山田 太郎_重要なファイル.docx'
           '太郎_山田_重要なファイル.pdf'"""
-    m = re.search(r'^([^_]+　[^_]+)_(.+)\.([A-Za-z]+)$', file)
+    m = re.search(r'^([^_]+　[^_]+)_(.+)\.([A-Za-z]+)$', name)
     if m:
-        name, base, ext = m.groups()
-        name = name.replace('　', ' ')
-        base, revision = parse_base(base)
-        return name, base, revision, ext
-    m = re.search(r'^([^_]+)_([^_]+)_(.+)\.([A-Za-z]+)$', file)
+        user, base, ext = m.groups()
+        user = user.replace('　', ' ')
+        base, revision = parse_basename(base)
+        return user, base, revision, ext
+    m = re.search(r'^([^_]+)_([^_]+)_(.+)\.([A-Za-z]+)$', name)
     if m:
         firstname, lastname, base, ext = m.groups()
-        name = f'{lastname} {firstname}'
-        base, revision = parse_base(base)
-        return name, base, revision, ext
+        user = f'{lastname} {firstname}'
+        base, revision = parse_basename(base)
+        return user, base, revision, ext
+    warn(f"illegal file name `{name}'.")
     raise ValueError
 
 def guess_id(astr):
-    """Extract student ID (either 4 or 8 digits) in string ASTR.
-    Return the 4-digit version of the student ID."""
+    """Extract student ID (either 4 or 8 digits) in string ASTR.  Return the
+    last 4-digit of the student ID."""
     m = re.search('\d{9,}', astr)
     if m:
         return None
@@ -89,40 +92,53 @@ def guess_id(astr):
         return m.group(1)
     return None
 
-def normalized_name(name, base, revision, ext):
-    """Generate the normalized name from attributes: NAME, BASE, REVISION, and
+def normalized_name(user, base, revision, ext):
+    """Generate the normalized name from attributes: USER, BASE, REVISION, and
     EXT."""
+    warn(f"normalized_name: {user}, {base}, {revision}, {ext}")
     student_id = guess_id(base)
     if student_id:
-        return f'{student_id}-{revision}-{name}-{base}.{ext}'
-    return f'ZZZZ-{revision}-{name}-{base}.{ext}'
+        return f'{student_id}-{revision}-{user}-{base}.{ext}'
+    else:
+        return f'ZZZZ-{revision}-{user}-{base}.{ext}'
 
 def main():
     opt = getopts('vd:') or usage()
     verbose = opt.v
-    outdir = opt.d if opt.d else pick_outdir()
+    outdir = opt.d
+    files = sys.argv[1:]
 
     if not outdir:
-        outdir = 'renamed'
+        # Ask for the output directory. 
+        outdir = pick_outdir()
+        if not outdir:
+            outdir = 'renamed'
 
-    files = sys.argv[1:]
     if not files:
+	    # Ask for report files to be copied.
         files = pick_files()
 
+    # NOTE: Creation of the output directory is deferred to make it invisible
+    # from users. 
     if not os.path.exists(outdir):
         os.mkdir(outdir)
 
-    lastpath = None
+    latest = {}
     for file in files:
-        base = os.path.basename(file)
-        name, base, revision, ext = parse_name(base)
-        newbase = normalized_name(name, base, revision, ext)
-        newpath = os.path.join(outdir, newbase)
+        # Just ignore all directories.
+        if os.path.isdir(file):
+            continue
+
+        name = os.path.basename(file)
+        user, base, revision, ext = parse_filename(name)
+        newname = normalized_name(user, base, revision, ext)
+        newpath = os.path.join(outdir, newname)
+
+        key = f'{user}-{base}.{ext}'
+        latest[key] = file, newpath
+
+    for file, newpath in latest.values():
         shutil.copy(file, newpath)
-        # FIXME: this code is redundant but works...
-        if revision > 1 and lastpath:
-            os.unlink(lastpath)
-        lastpath = newpath
 
 if __name__ == "__main__":
     main()
